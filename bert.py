@@ -8,7 +8,7 @@ from pdb import set_trace
 
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
-
+from preprocessing.preprocessing import *
 
 
 train_dir = "./claff-happydb/data/TRAIN/"
@@ -39,30 +39,31 @@ tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=Tru
 def maximum_sentences_length(train_df , test_df, labels ='social'):
     assert labels in ['social', 'agency']
     concated_df = pd.concat([train_df , test_df])
+    return max_sentence_length(concated_df)
+
+def max_sentence_length(df,label):
     max_len = 0
-    for sen in concated_df[lables]:
+    for sen in df[label]:
         input_ids =  tokenizer.encode(
             sen, add_special_tokens=True)
-        
         max_len = max(max_len, len(input_ids))
     
     return max_len
 
+df = pd.read_csv("./poem_clf_dataset/dataAll_with_label.csv")
 
-train_df , test_df = combine_labeled_df()
-# max_token_size = maximum_sentences_length(train_df , test_df)
+# train_df , test_df = combine_labeled_df()
+# print('Tokenized: ', tokenizer.tokenize(train_df['moment'][0]))
+# print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_df['moment'][0])))
 
-
-# Print the sentence split into tokens.
-print('Tokenized: ', tokenizer.tokenize(train_df['moment'][0]))
-
-# Print the sentence mapped to token ids.
-print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_df['moment'][0])))
+# max_token_size = max_sentence_length(df, "Poem")
+print('Tokenized: ', tokenizer.tokenize(df['Poem'][0]))
+print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(df['Poem'][0])))
 
 
 
 def torch_dataset(df ,label="agency"):
-    dropped_label = "agency" if label != "agency" else "social"
+    # dropped_label = "agency" if label != "agency" else "social"
     labels = LabelEncoder().fit_transform(df[label])
     input_ids = [] 
     attention_masks = []
@@ -86,7 +87,7 @@ def torch_dataset(df ,label="agency"):
     labels = torch.tensor(labels).long()
     return input_ids , attention_masks , labels
 
-def obtain_dataset_by_label(label, train_df= None , test_df=test_df, batch_size=32, hmid=False):
+def obtain_dataset_by_label(label, train_df= None , test_df=None, batch_size=32, hmid=False):
     hmids = list(test_df['hmid'].values)
     from torch.utils.data import TensorDataset, random_split
 
@@ -134,5 +135,6 @@ def obtain_dataset_by_label(label, train_df= None , test_df=test_df, batch_size=
     return train_dataloader , validation_dataloader , test_dataloader, hmids
 
 if __name__ == "__main__":
-    from sklearn.preprocessing import LabelEncoder
-    train_dataloader , validation_dataloader , test_dataloader, hmids = obtain_dataset_by_label('social',batch_size=1, train_df=train_df)
+    # from sklearn.preprocessing import LabelEncoder
+    # train_dataloader , validation_dataloader , test_dataloader, hmids = obtain_dataset_by_label('social',batch_size=1, train_df=train_df)
+    data = pd.read_csv("./poem_clf_dataset/dataAll_with_label.csv")

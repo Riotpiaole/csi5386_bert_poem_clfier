@@ -5,7 +5,7 @@ from pdb import set_trace
 from os.path import exists
 from collections import defaultdict
 
-from bert import obtain_dataset_by_label, train_df
+from bert import obtain_dataset_by_label
 from transformers import get_linear_schedule_with_warmup
 from transformers import BertForSequenceClassification, AdamW, BertConfig
 
@@ -14,13 +14,13 @@ LABEL = 'social'
 
 # Load BertForSequenceClassification, the pretrained BERT model with a single 
 # linear classification layer on top. 
-model = BertForSequenceClassification.from_pretrained(
-    "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
-    num_labels = 2, # The number of output labels--2 for binary classification.
-                    # You can increase this for multi-class tasks.   
-    output_attentions = False, # Whether the model returns attentions weights.
-    output_hidden_states = False, # Whether the model returns all hidden-states.
-)
+# model = BertForSequenceClassification.from_pretrained(
+#     "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+#     num_labels = 2, # The number of output labels--2 for binary classification.
+#                     # You can increase this for multi-class tasks.   
+#     output_attentions = False, # Whether the model returns attentions weights.
+#     output_hidden_states = False, # Whether the model returns all hidden-states.
+# )
 
 import numpy as np
 from sklearn.metrics import recall_score , precision_score , f1_score

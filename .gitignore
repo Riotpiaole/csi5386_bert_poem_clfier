@@ -3,3 +3,4 @@ claff-happydb
 stacking_result
 trained_weights
 *.csv
+*.pkl
