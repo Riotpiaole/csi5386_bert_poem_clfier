@@ -14,7 +14,7 @@ from preprocessing.preprocessing import *
 train_dir = "./claff-happydb/data/TRAIN/"
 test_dir = "./claff-happydb/data/TEST/"
 
-max_token_size = 155
+max_token_size = 512
 
 def read_data(csv_fn):
     df = pd.read_csv(csv_fn)

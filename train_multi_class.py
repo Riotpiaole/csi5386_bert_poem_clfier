@@ -10,10 +10,11 @@ from os import mkdir
 import time 
 from os.path import exists
 from transformers import AdamW, BertConfig
+import pandas as pd
 
 TOP_CATEGORIES = 17
 
-BATCH_SIZE = 32
+BATCH_SIZE = 12
 EPOCHS = 30
 dataset = pickle.load(
     open("./poem_clf_dataset/dataset.pkl", "rb"))
@@ -37,13 +38,9 @@ train_dataloader , validation_dataloader, test_dataloader = \
         sampler = RandomSampler(test_dataset), # Select batches randomly
         batch_size = BATCH_SIZE), \
 
-model = BertForMultiLabelSequenceClassification()
-
-
-
-def train(model, epochs, device= torch.device("cpu"), label="multi_class_poem"):
+def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_class_poem"):
     model.cuda()
-
+    total_t0 = time.time()
     optimizer = AdamW(model.parameters(),
                     lr = 2e-5, # args.learning_rate - default is 5e-5, our notebook had 2e-5
                     eps = 1e-8 # args.adam_epsilon  - default is 1e-8.
@@ -104,22 +101,18 @@ def train(model, epochs, device= torch.device("cpu"), label="multi_class_poem"):
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
-            res = model(b_input_ids,
-                token_type_ids=None, 
-                attention_mask=b_input_mask, 
-                labels=b_labels)
-            loss , logits = res['loss'] , res['logits']
+            
+            loss , logits = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
             model.zero_grad()        
 
             total_train_loss += loss.item()
-
+            
             # Perform a backward pass to calculate the gradients.
             loss.backward()
 
             # Clip the norm of the gradients to 1.0.
             # This is to help prevent the "exploding gradients" problem.
             torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
-
             # Update parameters and take a step using the computed gradient.
             # The optimizer dictates the "update rule"--how the parameters are
             # modified based on their gradients, the learning rate, etc.
@@ -151,11 +144,11 @@ def train(model, epochs, device= torch.device("cpu"), label="multi_class_poem"):
 
         print("")
         print("Running Validation...")
-        evaluation(validation_dataloader, model,"Validation", training_stats)
+        evaluation(validation_dataloader, model,"Validation", training_stats, device=device)
 
     
         
-        if epoch_i > 0 and epoch_i % 15 == 0:
+        if epoch_i >= 0 or epoch_i % 15 == 0:
             
             if not exists(f"./trained_weights/{epoch_i}"): mkdir(f"./trained_weights/{epoch_i}")
             if not exists(f"./result/{epoch_i}"): mkdir(f"./result/{epoch_i}")
@@ -168,7 +161,7 @@ def train(model, epochs, device= torch.device("cpu"), label="multi_class_poem"):
             
             print("")
             print("Running Testing...")
-            evaluation(test_dataloader, model,"Test", test_stats)
+            evaluation(test_dataloader, model,"Test", test_stats, device=device)
             test_stats = pd.DataFrame(test_stats)
             test_stats.to_csv(f"./result/{epochs}/{LABEL}_epoch_{epochs}_testing_result.csv", index=False)
         
@@ -195,4 +188,8 @@ if __name__ == "__main__":
         print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
     
-    train(model, 1, device)
+    model = BertForMultiLabelSequenceClassification.from_pretrained( 
+        "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+        num_labels = 17, # The number of output labels--2 for binary classification.   
+    )
+    train_multi_label(model, 1, device)

@@ -19,7 +19,7 @@ def get_current_project_directory():
 ''' Load poem data'''
 def load_data():
     data_folder_path = f"{get_current_project_directory()}/../poem_clf_dataset/"
-    file_name = ['1.csv', '2.csv', '3.csv', '4.csv', '5.csv', '11.csv']
+    file_name = ['1.csv', '2.csv', '3.csv', '4.csv', '5.csv']
     file_list = []
     for i in file_name:
         f = pd.read_csv(data_folder_path + i)

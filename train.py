@@ -26,19 +26,27 @@ import numpy as np
 from sklearn.metrics import recall_score , precision_score , f1_score
 # Function to calculate the accuracy of our predictions vs labels
 def evaluation_metric_res(preds, labels):
-    pred_flat = np.argmax(preds, axis=1).flatten()
+
+    pred_flat = preds.flatten()
+    pred_flat[ pred_flat > 0.5] = 1
+    pred_flat[ pred_flat < 0.5] = 0
+    
     labels_flat = labels.flatten()
     recall_res_score = recall_score( labels_flat , pred_flat )
     precision_res_score = precision_score( labels_flat , pred_flat )
     f1_res_score = f1_score( labels_flat , pred_flat )
-
+    print(f"recall {recall_res_score * 100:.2f} % "
+          f"precision {precision_res_score * 100:.2f} % "
+          f"f1 score {f1_res_score * 100:.2f} %")
     return (np.sum(pred_flat == labels_flat) / len(labels_flat), 
             recall_res_score,
             precision_res_score, 
             f1_res_score)
 
-def evaluation( data_loader, model , tag="val", next_stats= {}, save_res=False):
+
+def evaluation( data_loader, model , tag="val", next_stats= {}, save_res=False, device=None):
     dfs = []
+    res = defaultdict(lambda : [])
     t0 = time.time()
 
     total_eval_accuracy = 0
@@ -57,11 +65,10 @@ def evaluation( data_loader, model , tag="val", next_stats= {}, save_res=False):
         # the forward pass, since this is only needed for backprop (training).
         with torch.no_grad():        
 
-            res = model(b_input_ids, 
+            loss , logits= model(b_input_ids, 
                                 token_type_ids=None, 
                                 attention_mask=b_input_mask,
                                 labels=b_labels)
-            loss, logits = res['loss'], res['logits']
 
         # Accumulate the validation loss.
         total_eval_loss += loss.item()
@@ -69,6 +76,7 @@ def evaluation( data_loader, model , tag="val", next_stats= {}, save_res=False):
         # Move logits and labels to CPU
         logits = logits.detach().cpu().numpy()
         label_ids = b_labels.to('cpu').numpy()
+
 
         eval_accuracy, eval_recall , eval_precision , eval_f1_score = \
             evaluation_metric_res(
@@ -133,28 +141,8 @@ import numpy as np
 # We'll store a number of quantities such as training and validation loss, 
 # validation accuracy, and timings.
 
-# Measure the total training time for the whole run.
-total_t0 = time.time()
 
-
-import torch
-
-# If there's a GPU available...
-if torch.cuda.is_available():    
-
-    # Tell PyTorch to use the GPU.    
-    device = torch.device("cuda")
-
-    print('There are %d GPU(s) available.' % torch.cuda.device_count())
-
-    print('We will use the GPU:', torch.cuda.get_device_name(0))
-
-# If not...
-else:
-    print('No GPU available, using the CPU instead.')
-    device = torch.device("cpu")
-
-def train(model, epochs, label=LABEL, device = device):      
+def train(model, epochs, label=LABEL, device = None):      
     # Number of training epochs. The BERT authors recommend between 2 and 4. 
     # We chose to run for 4, but we'll see later that this may be over-fitting the
     # training data.
@@ -302,6 +290,27 @@ def train(model, epochs, label=LABEL, device = device):
     
 
 if __name__ == "__main__":
+    # Measure the total training time for the whole run.
+    total_t0 = time.time()
+
+
+    import torch
+
+    # If there's a GPU available...
+    if torch.cuda.is_available():    
+
+        # Tell PyTorch to use the GPU.    
+        device = torch.device("cuda")
+
+        print('There are %d GPU(s) available.' % torch.cuda.device_count())
+
+        print('We will use the GPU:', torch.cuda.get_device_name(0))
+
+    # If not...
+    else:
+        print('No GPU available, using the CPU instead.')
+        device = torch.device("cpu")
+
     # train(model, 150, 'agency')
     train(model, 30, 'social')
 
