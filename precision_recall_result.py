@@ -17,7 +17,6 @@ def pack_res(prediction, labels, label='agency_label', res= defaultdict(lambda: 
     res[f'{label.replace("label", "")}=yes_f1_score'].append(f_score[0])
     res[f'{label.replace("label", "")}=no_f1_score'].append(f_score[1])
 
-    set_trace()
     res_df = pd.DataFrame(res)
     
     res_df.to_csv(f"./{tag}.csv")

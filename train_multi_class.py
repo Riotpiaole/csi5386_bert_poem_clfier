@@ -2,8 +2,9 @@ import torch
 from pdb import set_trace
 import pickle
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler , random_split , DataLoader
-from transformers import get_linear_schedule_with_warmup
+from transformers import get_linear_schedule_with_warmup 
 from multi_cls_bert import BertForMultiLabelSequenceClassification
+from multi_cls_mobile_bert import MobileBertForMultiLabelSequenceClassification
 from train import evaluation_metric_res , evaluation , format_time
 from collections import defaultdict
 from os import mkdir
@@ -15,7 +16,7 @@ import pandas as pd
 TOP_CATEGORIES = 17
 
 BATCH_SIZE = 12
-EPOCHS = 30
+EPOCHS = 60
 dataset = pickle.load(
     open("./poem_clf_dataset/dataset.pkl", "rb"))
 
@@ -59,9 +60,6 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
 
     
     training_stats = defaultdict(lambda : [] )
-    # For each epoch...
-    if not exists(f"./result/{epochs}"):
-        mkdir(f"./result/{epochs}")
 
     for epoch_i in range( epochs):
         
@@ -102,7 +100,8 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
             
-            loss , logits = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+            res = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
+            loss , logits = res
             model.zero_grad()        
 
             total_train_loss += loss.item()
@@ -112,7 +111,7 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
 
             # Clip the norm of the gradients to 1.0.
             # This is to help prevent the "exploding gradients" problem.
-            torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            torch.nn.utils.clip_grad_norm_(model.bert.parameters(), 1.0)
             # Update parameters and take a step using the computed gradient.
             # The optimizer dictates the "update rule"--how the parameters are
             # modified based on their gradients, the learning rate, etc.
@@ -120,7 +119,6 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
 
             # Update the learning rate.
             scheduler.step()
-
         # Calculate the average loss over all of the batches.
         avg_train_loss = total_train_loss / len(train_dataloader)            
         
@@ -148,14 +146,15 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
 
     
         
-        if epoch_i >= 0 or epoch_i % 15 == 0:
+        if epoch_i >= 0 and epoch_i % 15 == 0:
             
-            if not exists(f"./trained_weights/{epoch_i}"): mkdir(f"./trained_weights/{epoch_i}")
-            if not exists(f"./result/{epoch_i}"): mkdir(f"./result/{epoch_i}")
+            if not exists(f"./trained_weights/{LABEL}/{epoch_i}"): 
+                mkdir(f"./trained_weights/{LABEL}/{epoch_i}")
+            if not exists(f"./result/{LABEL}/{epoch_i}"): mkdir(f"./result/{LABEL}/{epoch_i}")
 
             df = pd.DataFrame(training_stats)
-            df.to_csv(f"./result/{epoch_i}/{LABEL}_epoch_{epoch_i}_bert_training_result.csv", index=False) 
-            torch.save(model.state_dict(), f"./trained_weights/{epoch_i}/{LABEL}_epoch_{epoch_i}_bert_model.pth")
+            df.to_csv(f"./result/{LABEL}/{epochs}/{LABEL}_epoch_{epoch_i}_bert_training_result.csv", index=False) 
+            torch.save(model.state_dict(), f"./trained_weights/{LABEL}/{epoch_i}/{LABEL}_epoch_{epoch_i}_bert_model.pth")
         
             test_stats = defaultdict(lambda : [])
             
@@ -163,7 +162,7 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
             print("Running Testing...")
             evaluation(test_dataloader, model,"Test", test_stats, device=device)
             test_stats = pd.DataFrame(test_stats)
-            test_stats.to_csv(f"./result/{epochs}/{LABEL}_epoch_{epochs}_testing_result.csv", index=False)
+            test_stats.to_csv(f"./result/{LABEL}/{epoch_i}/{LABEL}_epoch_{epochs}_testing_result.csv", index=False)
         
     print("")
     print("Training complete!")
@@ -191,5 +190,13 @@ if __name__ == "__main__":
     model = BertForMultiLabelSequenceClassification.from_pretrained( 
         "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
         num_labels = 17, # The number of output labels--2 for binary classification.   
+        mobilebert=False
     )
-    train_multi_label(model, 1, device)
+
+
+    train_multi_label(model, epochs=EPOCHS, device=device, LABEL="multi_class_mobile_bert_poem")
+
+    # model = MobileBertForMultiLabelSequenceClassification(
+    #     num_labels = 17, # The number of output labels--2 for binary classification.
+    # )
+    # train_multi_label(model, epochs=EPOCHS, device=device, LABEL='multi_class_mobile_bert_poem')
