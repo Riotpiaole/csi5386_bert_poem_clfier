@@ -104,7 +104,7 @@ def torch_dataset(df, labels , label='Label'):
 
     dataset = TensorDataset(input_ids, attention_masks, labels)
     
-    with open(f'{os.path.abspath('')}/dataset/dataset.pkl', 'wb') as f:
+    with open(f'{os.path.abspath('')}/dataset/pfundation_dataset.pkl', 'wb') as f:
         pickle.dump(dataset,  f)
     return dataset
 
