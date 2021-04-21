@@ -4,3 +4,7 @@ stacking_result
 trained_weights
 *.csv
 *.pkl
+.vscode
+.DS_Store
+categoriespoems
+*.zip
