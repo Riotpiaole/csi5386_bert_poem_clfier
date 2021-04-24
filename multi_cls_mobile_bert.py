@@ -31,7 +31,6 @@ class MobileBertForMultiLabelSequenceClassification(Module):
         res = self.bert(input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask)
         pooled_output = res['pooler_output']
         pooled_output = self.dropout(pooled_output)
-        set_trace()
         logits = self.classifier(pooled_output)
         zeros = torch.zeros_like(logits)
         ones = torch.ones_like(logits)

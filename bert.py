@@ -8,7 +8,6 @@ from pdb import set_trace
 
 from sklearn.preprocessing import LabelEncoder
 from torch.utils.data import DataLoader, RandomSampler, SequentialSampler
-from preprocessing.preprocessing import *
 
 
 train_dir = "./claff-happydb/data/TRAIN/"
@@ -32,9 +31,9 @@ def combine_labeled_df():
 
     return df_train , df_test 
 
-from transformers import BertTokenizer
-print('Loading BERT tokenizer...')
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+# from transformers import BertTokenizer
+# print('Loading BERT tokenizer...')
+# tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
 
 def maximum_sentences_length(train_df , test_df, labels ='social'):
     assert labels in ['social', 'agency']
@@ -50,15 +49,15 @@ def max_sentence_length(df,label):
     
     return max_len
 
-df = pd.read_csv("./poem_clf_dataset/dataAll_with_label.csv")
+# df = pd.read_csv("./poem_clf_dataset/dataAll_with_label.csv")
 
 # train_df , test_df = combine_labeled_df()
 # print('Tokenized: ', tokenizer.tokenize(train_df['moment'][0]))
 # print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(train_df['moment'][0])))
 
 # max_token_size = max_sentence_length(df, "Poem")
-print('Tokenized: ', tokenizer.tokenize(df['Poem'][0]))
-print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(df['Poem'][0])))
+# print('Tokenized: ', tokenizer.tokenize(df['Poem'][0]))
+# print('Token IDs: ', tokenizer.convert_tokens_to_ids(tokenizer.tokenize(df['Poem'][0])))
 
 
 

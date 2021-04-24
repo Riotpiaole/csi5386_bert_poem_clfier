@@ -87,7 +87,7 @@ def torch_dataset(df, labels , label='Label'):
     for poem in tqdm(df.Poem):
         encoded_dict = tokenizer.encode_plus(
             poem,
-            max_length = 128,           # Pad & truncate all sentences.
+            max_length = 512,           # Pad & truncate all sentences.
             pad_to_max_length = True,
             return_attention_mask = True,   # Construct attn. masks.
             return_tensors = 'pt',     # Return pytorch tensors.  
@@ -103,19 +103,19 @@ def torch_dataset(df, labels , label='Label'):
     labels = torch.tensor(labels.to_numpy())
 
     dataset = TensorDataset(input_ids, attention_masks, labels)
-    
-    with open(f'{os.path.abspath('')}/dataset/pfundation_dataset.pkl', 'wb') as f:
+    set_trace()
+    with open( f"{os.path.abspath('')}/dataset/pfundation_dataset.pkl", 'wb') as f:
         pickle.dump(dataset,  f)
     return dataset
 
-if __name__ = "main":
+if __name__ == "__main__":
     """
     Totally includ 9 categories representing 9 folders.
     Change the data path before run it.
     
     root_path: head path of data
     """
-    root_path = os.path.abspath('')+"/categoriespoems/"
+    root_path = os.path.abspath('')+"/../categoriespoems/"
     cate_list = ['Activities', 'Arts & Sciences', 'Living', 'Love', 'Mythology & Folklore', 'Nature', 'Relationships', 'Religion', 'Social Commentaries']
     
     data = formattingData(root_path, cate_list)

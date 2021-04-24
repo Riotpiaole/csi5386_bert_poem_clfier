@@ -13,16 +13,17 @@ from os.path import exists
 from transformers import AdamW, BertConfig
 import pandas as pd
 
-TOP_CATEGORIES = 17
+TOP_CATEGORIES = 4
 
-BATCH_SIZE = 12
+BATCH_SIZE = 4
 EPOCHS = 60
-dataset = pickle.load(
-    open("./poem_clf_dataset/dataset.pkl", "rb"))
+with open("./poem_clf_dataset/dataset.pkl", "rb") as fs:
+    dataset = pickle.load(fs)
 
 TRAIN_SIZE = int(0.8 * len(dataset))
 VALIDATION_SIZE = int(0.1 * len(dataset))
 TEST_SIZE = int(0.1 * len(dataset)) + 1
+
 
 train_dataset , val_dataset, test_dataset = random_split(
     dataset, [TRAIN_SIZE, VALIDATION_SIZE , TEST_SIZE])
@@ -61,7 +62,7 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
     
     training_stats = defaultdict(lambda : [] )
 
-    for epoch_i in range( epochs):
+    for epoch_i in range(1, epochs+1):
         
         # ========================================
         #               Training
@@ -146,14 +147,23 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
 
     
         
-        if epoch_i >= 0 and epoch_i % 15 == 0:
-            
+        if epoch_i % 15 == 0:
+
+            if not exists(f"./result/{LABEL}"): 
+                mkdir(f"./result/{LABEL}")
+
+            if not exists(f"./result/{LABEL}/{epoch_i}"): 
+                mkdir(f"./result/{LABEL}/{epoch_i}")
+
+            if not exists(f"./trained_weights/{LABEL}/"):
+                mkdir(f"./trained_weights/{LABEL}/")
+
             if not exists(f"./trained_weights/{LABEL}/{epoch_i}"): 
                 mkdir(f"./trained_weights/{LABEL}/{epoch_i}")
-            if not exists(f"./result/{LABEL}/{epoch_i}"): mkdir(f"./result/{LABEL}/{epoch_i}")
+        
 
             df = pd.DataFrame(training_stats)
-            df.to_csv(f"./result/{LABEL}/{epochs}/{LABEL}_epoch_{epoch_i}_bert_training_result.csv", index=False) 
+            df.to_csv(f"./result/{LABEL}/{epoch_i}/{LABEL}_epoch_{epoch_i}_bert_training_result.csv", index=False) 
             torch.save(model.state_dict(), f"./trained_weights/{LABEL}/{epoch_i}/{LABEL}_epoch_{epoch_i}_bert_model.pth")
         
             test_stats = defaultdict(lambda : [])
@@ -186,17 +196,20 @@ if __name__ == "__main__":
     else:
         print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
-    
+
+    torch.cuda.empty_cache()
+
     model = BertForMultiLabelSequenceClassification.from_pretrained( 
         "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
-        num_labels = 17, # The number of output labels--2 for binary classification.   
+        num_labels = 8, # The number of output labels--2 for binary classification.   
         mobilebert=False
     )
 
+    train_multi_label(model, epochs=EPOCHS, device=device, LABEL="multi_class_poem_enhance")
 
-    train_multi_label(model, epochs=EPOCHS, device=device, LABEL="multi_class_mobile_bert_poem")
+    # torch.cuda.empty_cache()
 
     # model = MobileBertForMultiLabelSequenceClassification(
-    #     num_labels = 17, # The number of output labels--2 for binary classification.
+    #     num_labels = 8, # The number of output labels--2 for binary classification.
     # )
-    # train_multi_label(model, epochs=EPOCHS, device=device, LABEL='multi_class_mobile_bert_poem')
+    # train_multi_label(model, epochs=EPOCHS, device=device, LABEL='multi_class_poem_mobile_bert_poem')

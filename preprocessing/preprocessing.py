@@ -9,8 +9,11 @@ import pandas as pd
 from tqdm import tqdm 
 from pdb import set_trace
 from transformers import BertTokenizer
-print('Loading BERT tokenizer...')
-tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+from os.path import abspath
+from poetryfoundation_dataset_preprocessing import formattingData
+
+
+
 
 
 def get_current_project_directory():
@@ -93,7 +96,7 @@ def torch_dataset(df, labels , label='Label'):
     for poem in tqdm(df.Poem):
         encoded_dict = tokenizer.encode_plus(
             poem,
-            max_length = 128,           # Pad & truncate all sentences.
+            max_length = 512,           # Pad & truncate all sentences.
             pad_to_max_length = True,
             return_attention_mask = True,   # Construct attn. masks.
             return_tensors = 'pt',     # Return pytorch tensors.  
@@ -114,22 +117,34 @@ def torch_dataset(df, labels , label='Label'):
     return dataset
 
 if __name__ == "__main__":
+    print('Loading BERT tokenizer...')
+    tokenizer = BertTokenizer.from_pretrained('bert-base-uncased', do_lower_case=True)
+    
     dataAll = load_data()
     dataAll.Poem = preprocess_poem(dataAll.Poem)
     filtered_category = preprocess_tag(dataAll)
     # Get top tags
     top_category = list(filtered_category.keys())
+    top_category = ['Activities', 'Arts & Sciences', 'Living', 'Love', 'Nature', 'Relationships', 'Religion', 'Social Commentaries']
+
     print(top_category)
-    dataAll.drop(columns=["Unnamed: 0", "Title"],inplace=True)
+    dataAll.drop(columns=["Unnamed: 0", "Title", 'Poet'],inplace=True)
     dataAll.dropna(inplace=True)
-    labels = dataAll['Tags'].apply(tags_to_binary)
+
+    root_path = abspath('')+"/categoriespoems/"
+    data = formattingData(root_path, top_category)
+    overall_data = pd.concat([dataAll, data ])
+    overall_data.dropna(inplace=True)
+
+    labels = overall_data['Tags'].apply(tags_to_binary)
     
     labels = pd.DataFrame(
         data=np.array(labels.to_numpy().tolist()),
         columns=top_category)
 
-    torch_dataset(dataAll, labels)
-    s = pickle.load(
-        open(f"{get_current_project_directory()}/../poem_clf_dataset/dataset.pkl","rb"))
-    
 
+    dataset =torch_dataset(overall_data, labels)
+    print("total amount of dataset %d", len(dataset))
+    from os.path import abspath
+    with open(f"{abspath('')}/poem_clf_dataset/dataset.pkl",'wb') as f:
+        pickle.dump(dataset,  f)

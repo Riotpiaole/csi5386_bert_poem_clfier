@@ -1,7 +1,8 @@
-import pandas as pd 
 from os import listdir
+from os.path import abspath
 
 from numpy import argmax
+from poetryfoundation_dataset_preprocessing import formattingData
 # define input string
 
 def tag_preporcessing(data):
@@ -45,3 +46,4 @@ def bundle_entire_dataset(folder):
 
 if __name__ == "__main__":
     full_df = bundle_entire_dataset("./poem_clf_dataset")
+    
