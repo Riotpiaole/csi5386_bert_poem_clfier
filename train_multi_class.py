@@ -13,10 +13,10 @@ from os.path import exists
 from transformers import AdamW, BertConfig
 import pandas as pd
 
-TOP_CATEGORIES = 4
+TOP_CATEGORIES = 24
 
-BATCH_SIZE = 4
-EPOCHS = 60
+BATCH_SIZE = 2
+EPOCHS = 30
 with open("./poem_clf_dataset/dataset.pkl", "rb") as fs:
     dataset = pickle.load(fs)
 
@@ -89,14 +89,6 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
         # For each batch of training data...
         for step, batch in enumerate(train_dataloader):
 
-            # Progress update every 40 batches.
-            if step % 1 == 0 and not step == 0:
-                # Calculate elapsed time in minutes.
-                elapsed = format_time(time.time() - t0)
-                
-                # Report progress.
-                print('  Batch {:>5,}  of  {:>5,}.    Elapsed: {:}.'.format(step, len(train_dataloader), elapsed), end="\r")
-
             b_input_ids = batch[0].to(device)
             b_input_mask = batch[1].to(device)
             b_labels = batch[2].to(device)
@@ -104,6 +96,15 @@ def train_multi_label(model, epochs, device= torch.device("cpu"), LABEL="multi_c
             res = model(b_input_ids, token_type_ids=None, attention_mask=b_input_mask, labels=b_labels)
             loss , logits = res
             model.zero_grad()        
+
+            # Progress update every 40 batches.
+            if step % 1 == 0 and not step == 0:
+                # Calculate elapsed time in minutes.
+                elapsed = format_time(time.time() - t0)
+                
+                # Report progress.
+                print('  Batch {:>5,}  of  {:>5,}. Loss {:.6f}  Elapsed: {:}.'.format(step, len(train_dataloader), loss.item() , elapsed), end="\r")
+
 
             total_train_loss += loss.item()
             
@@ -197,19 +198,19 @@ if __name__ == "__main__":
         print('No GPU available, using the CPU instead.')
         device = torch.device("cpu")
 
-    torch.cuda.empty_cache()
+    # torch.cuda.empty_cache()
 
-    model = BertForMultiLabelSequenceClassification.from_pretrained( 
-        "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
-        num_labels = 8, # The number of output labels--2 for binary classification.   
-        mobilebert=False
-    )
+    # model = BertForMultiLabelSequenceClassification.from_pretrained( 
+    #     "bert-base-uncased", # Use the 12-layer BERT model, with an uncased vocab.
+    #     num_labels = 8, # The number of output labels--2 for binary classification.   
+    #     mobilebert=False
+    # )
 
-    train_multi_label(model, epochs=EPOCHS, device=device, LABEL="multi_class_poem_enhance")
+    # train_multi_label(model, epochs=EPOCHS, device=device, LABEL="multi_class_poem_enhance")
 
     # torch.cuda.empty_cache()
 
-    # model = MobileBertForMultiLabelSequenceClassification(
-    #     num_labels = 8, # The number of output labels--2 for binary classification.
-    # )
-    # train_multi_label(model, epochs=EPOCHS, device=device, LABEL='multi_class_poem_mobile_bert_poem')
+    model = MobileBertForMultiLabelSequenceClassification(
+        num_labels = 8, # The number of output labels--2 for binary classification.
+    )
+    train_multi_label(model, epochs=EPOCHS, device=device, LABEL='multi_class_poem_mobile_bert_poem_enhance')
